@@ -94,6 +94,9 @@ a{color:var(--brand-text)}
 }
 .banner .meta{margin-top:12px;font-size:12.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:6px 16px}
 .banner .meta b{color:var(--ink);font-weight:500}
+.metalink{font:inherit;color:var(--brand-text);border-bottom:1px solid var(--brand-line);padding:0 0 1px}
+.metalink b{color:var(--brand-text);font-weight:700}
+.metalink:hover{border-bottom-color:var(--brand-text)}
 
 /* ── フィルタ ─────────────────────────────────────────────────────── */
 .filters{position:sticky;top:var(--topbar,104px);z-index:30;background:var(--ground);padding:12px 0 10px;border-bottom:1px solid var(--line-soft)}
@@ -151,6 +154,8 @@ a{color:var(--brand-text)}
 .fmt.PLO{background:var(--f-plo)}
 .fmt.MIX,.fmt.FLMIX{background:var(--f-mix)}
 .fmt.NL{background:var(--f-nl)}
+.fmt.RING{background:var(--gold)}
+.row.ring{border-left-color:var(--brand-line)}
 .fmt.OTHER{background:var(--f-other)}
 .row-body{flex:1;min-width:0}
 .ename{display:block;font-family:var(--display);font-weight:700;font-size:16.5px;letter-spacing:-.01em;line-height:1.28}
@@ -182,6 +187,11 @@ a{color:var(--brand-text)}
   padding:11px 18px;background:rgba(246,248,247,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
 }
 .back{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--brand-text)}
+/* 長いページを読み切ったあと、上まで戻らずに閉じられるように下にも置く */
+.back-bottom{display:block;width:100%;padding:15px 0;margin:4px 0 0;text-align:center;
+  border:1px solid var(--line);background:var(--surface);
+  font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--brand-text)}
+.back-bottom:hover{border-color:var(--brand)}
 .sheet-bar .who{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
 .hero{padding:22px 0 20px;border-bottom:1px solid var(--line-soft)}
 .hero-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -302,6 +312,13 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
 }
 .btn:hover{background:var(--brand-pale)}
 
+.featimg{display:block;width:100%;height:auto;border:1px solid var(--line-soft)}
+.sns-btns{display:flex;gap:9px;flex-wrap:wrap}
+.sns-btns a{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;
+  border:1px solid var(--line);background:var(--surface);
+  font-family:var(--display);font-weight:700;font-size:12.5px;transition:border-color .12s}
+.sns-btns a:hover{border-color:var(--brand)}
+.sns-btns svg{flex:none;width:17px;height:17px;display:block}
 .infolist{display:flex;flex-direction:column;gap:9px;font-size:13px}
 .infolist .ir{display:flex;gap:12px;align-items:baseline;border-bottom:1px solid var(--line-soft);padding-bottom:9px}
 .infolist .ir:last-child{border-bottom:0}
@@ -326,6 +343,7 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
     <button class="tab" role="tab" data-tab="schedule" aria-selected="true">SCHEDULE</button>
     <button class="tab" role="tab" data-tab="results" aria-selected="false">RESULTS</button>
     <button class="tab" role="tab" data-tab="leaderboard" aria-selected="false">LEADERBOARD</button>
+    <button class="tab" role="tab" data-tab="feature" aria-selected="false" id="featTab" hidden>—</button>
     <button class="tab" role="tab" data-tab="info" aria-selected="false">INFO</button>
   </nav>
 </header>
@@ -470,12 +488,12 @@ function renderSchedule() {
   const groups = [];
   for (const d of dates) {
     const inDay = evs.filter(e => e.date === d);
-    if (!inDay.length) continue;
+    if (!inDay.length && !ringOn(d)) continue;
     const p = dparts(d);
     groups.push(`<section class="daysec">
       <div class="dayhead"><span class="dd">${p.md}</span><span class="dw">${p.w}</span>
         <span class="dn">${inDay.length} events</span></div>
-      ${inDay.map(rowHTML).join("")}</section>`);
+      ${inDay.map(rowHTML).join("")}${ringRowHTML(d)}</section>`);
   }
   /* 種目はシリーズごとに違う（Third で NLH/PLO が増えた）ので、実在するものだけ並べる */
   const fmts = ["ALL", ...new Set(DATA.events.map(e => e.format))];
@@ -487,6 +505,10 @@ function renderSchedule() {
       <div class="period">${esc(s.period.label)}</div>
       <div class="meta">
         <span><b>${DATA.events.length}</b> tournaments</span>
+        ${/* RING ARENA は開催日の行にしか出ないので、上にも置いて見つけられるようにする */""}
+        ${DATA.ring && DATA.ring.dates.length
+          ? `<button class="metalink" data-ring="1">${esc(DATA.ring.title)} <b>${DATA.ring.dates.length}</b> nights</button>`
+          : ""}
         ${totalEntries() ? `<span><b>${totalEntries()}</b> entries</span>` : ""}
         <span>Main Venue <b>${esc(s.venue.name)}</b></span>
       </div>
@@ -502,8 +524,29 @@ function renderSchedule() {
     ${groups.length ? groups.join("")
       : state.favOnly ? '<p class="empty">お気に入りはまだありません。<br>各トーナメントの ☆ を押すとここに集まります。</p>'
       : '<p class="empty">条件に合うトーナメントはありません。</p>'}
-    ${ringScheduleHTML()}
     ${footHTML()}`;
+}
+/* RING ARENA は毎日ではないので、**開催日の行にだけ**出す（押すと詳細）。
+   種目フィルタやお気に入り表示のときはトーナメントだけを見たいので出さない。 */
+function ringOn(d) {
+  const r = DATA.ring;
+  if (!r || !(r.dates || []).includes(d)) return false;
+  // 日付タブの絞り込みも見る。見ないと**選んだ日以外のリング開催日まで残る**
+  if (state.day !== "ALL" && state.day !== d) return false;
+  return state.fmt === "ALL" && !state.satOnly && !state.favOnly;
+}
+function ringRowHTML(d) {
+  if (!ringOn(d)) return "";
+  const r = DATA.ring;
+  return `<div class="row ring">
+    <button class="row-main" data-ring="1">
+      <div class="row-top">
+        <span class="eno">#${esc(r.no)}</span>
+        <span class="fmt RING">RING</span>
+        <div class="row-body"><span class="ename">${esc(r.title)}</span></div>
+        <div class="row-time"><span class="re" style="font-size:12px">${esc(r.hours)}</span></div>
+      </div>
+    </button></div>`;
 }
 function ringScheduleHTML() {
   const r = DATA.ring;
@@ -535,7 +578,6 @@ function finishersHTML(ev, r) {
     ${photo ? `<img class="resphoto" src="${photo}" alt="#${String(ev.no).padStart(2,"0")} ${esc(ev.title)} の結果写真" loading="lazy">` : ""}
     <div class="resmeta">
       <div><div class="lab">ENTRIES</div><div class="big">${r.entries}</div></div>
-      <div><div class="lab">倍率</div><div class="big">×${r.mult}</div></div>
       <div><div class="lab">優勝ポイント</div><div class="big">${r.base.toLocaleString("ja-JP")}</div></div>
     </div>
     <div class="fin">${rows}</div>
@@ -619,9 +661,9 @@ function renderLeaderboard() {
       <h3>Point</h3>
       <div class="lbrule">
         <ul class="notes">
-          <li>優勝ポイント ＝ 総エントリー数 × 10（最低 200）× 倍率。倍率は通常 1、PREMIER 1.5</li>
+          <li>優勝ポイント ＝ 総エントリー数 × 10（最低 200）。<b>PREMIER</b> はその 1.5倍</li>
           <li>以下1順位ごとに上位ポイントの 50%（5ポイント単位で切り上げ）。10ポイントを下回る順位は付与なし</li>
-          <li>エントリーポイント ＝ 本人のエントリー数（リエントリー含む）× 10 × 倍率</li>
+          <li>エントリーポイント ＝ 本人のエントリー数（リエントリー含む）× 10</li>
           <li>リングゲームは純増ポイント1位に 160、以下1順位ごとに 50%</li>
         </ul>
       </div>
@@ -648,6 +690,92 @@ function lbPrizeItem(x) {
   return `<span class="pv" style="font-size:14px">${esc(main)}</span>`
     + (o.sub ? `<span class="psub">${esc(o.sub)}</span>` : "")
     + (note ? `<span class="ps">${esc(note)}</span>` : "");
+}
+
+/* 開催の何日目か。**境目は正午**（深夜3時のトーナメントは前日の続きなので、
+   0時で日付を切ると Day がずれる）。会期の前後では COMING / FINISHED。 */
+function businessDate(t) {
+  const d = new Date(t.getTime() - 12 * 3600 * 1000);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function seriesState() {
+  const pr = DATA.series.period;
+  if (!pr || !pr.from) return "";
+  const ymd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const from = ymd(pr.from), to = ymd(pr.to), today = businessDate(new Date());
+  const DAY = 86400000;
+  if (today < from) return "COMING";
+  if (today > to) return "FINISHED";
+  return "Day " + (Math.round((today - from) / DAY) + 1);
+}
+
+/* RING ARENA の詳細。トーナメントと同じ見た目のシートで開く */
+function openRing() {
+  const r = DATA.ring;
+  const ov = document.getElementById("overlay");
+  ov.innerHTML = `<div class="sheet" id="sheet">
+    <div class="sheet-bar"><button class="back" id="backBtn">← BACK</button></div>
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-line"><span class="hero-no">#${esc(r.no)}</span>
+          <span class="fmt RING">RING</span></div>
+        <h2>${esc(r.title)}</h2>
+        <div class="hero-when">
+          <div><div class="k">HOURS</div><div class="v">${esc(r.hours)}</div></div>
+          <div><div class="k">NIGHTS</div><div class="v">${r.dates.length}</div></div>
+        </div>
+      </div>
+      <section class="blk"><h3>Schedule</h3>
+        <div class="infolist">${r.dates.map(d => { const p = dparts(d);
+          return `<div class="ir"><span class="ik">${p.md}</span><span class="iv">${p.wj}　${esc(r.hours)}</span></div>`;
+        }).join("")}</div>
+      </section>
+      <section class="blk"><h3>Leaderboard Point</h3>
+        <div class="lbrule"><ul class="notes">
+          <li>期間中のリングゲームで、それぞれ純増ポイント1位に 160 ポイント</li>
+          <li>以下1順位ごとに上位ポイントの 50%（5ポイント単位で切り上げ）</li>
+        </ul></div>
+      </section>
+      <button class="back-bottom" id="backBtn2">← BACK</button>
+      ${footHTML()}
+    </div></div>`;
+  document.body.style.overflow = "hidden";
+}
+
+/* 特集するイベント。**シリーズの主催ではない**ので、スポンサー扱いにも
+   下位の扱いにもならない「SPECIAL EVENT」として並べる（2026-10-01 本人意向）。
+   リーダーボード1位の権利がここに繋がるので、その関係だけを明記する。 */
+const SNS_PATH = {
+  youtube: "M21.6 7.2a2.8 2.8 0 00-2-2C17.9 4.8 12 4.8 12 4.8s-5.9 0-7.6.4a2.8 2.8 0 00-2 2A29 29 0 002 12a29 29 0 00.4 4.8 2.8 2.8 0 002 2c1.7.4 7.6.4 7.6.4s5.9 0 7.6-.4a2.8 2.8 0 002-2A29 29 0 0022 12a29 29 0 00-.4-4.8zM10.1 14.9V9.1l5 2.9z",
+  x: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z",
+  instagram: "M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zm0 2.16c-3.14 0-3.51.01-4.75.07-1.15.05-1.77.24-2.18.4-.55.22-.94.47-1.35.88-.41.41-.66.8-.88 1.35-.16.41-.35 1.03-.4 2.18-.06 1.24-.07 1.61-.07 4.75s.01 3.51.07 4.75c.05 1.15.24 1.77.4 2.18.22.55.47.94.88 1.35.41.41.8.66 1.35.88.41.16 1.03.35 2.18.4 1.24.06 1.61.07 4.75.07s3.51-.01 4.75-.07c1.15-.05 1.77-.24 2.18-.4.55-.22.94-.47 1.35-.88.41-.41.66-.8.88-1.35.16-.41.35-1.03.4-2.18.06-1.24.07-1.61.07-4.75s-.01-3.51-.07-4.75c-.05-1.15-.24-1.77-.4-2.18-.22-.55-.47-.94-.88-1.35-.41-.41-.8-.66-1.35-.88-.41-.16-1.03-.35-2.18-.4-1.24-.06-1.61-.07-4.75-.07zm0 3.67a5.01 5.01 0 110 10.02 5.01 5.01 0 010-10.02zm0 8.26a3.25 3.25 0 100-6.5 3.25 3.25 0 000 6.5zm6.38-8.46a1.17 1.17 0 11-2.34 0 1.17 1.17 0 012.34 0z",
+};
+function renderFeature() {
+  const f = DATA.series.feature;
+  if (!f) return renderInfo();
+  return `<div class="banner"><h1>${esc(f.title)}</h1>
+      <div class="period">${esc(f.when)}</div>
+      <div class="meta"><span>Venue <b>${esc(f.venue)}</b></span></div>
+    </div>
+    ${f.banner_src ? `<section class="blk" style="padding-top:18px">
+      <img class="featimg" src="${f.banner_src}" alt="${esc(f.title)}"></section>` : ""}
+    <section class="blk">
+      <p style="margin:0 0 10px;font-size:15px;font-weight:500">${esc(f.lead)}</p>
+      ${(f.body || []).map(t => `<p style="margin:0 0 8px;font-size:13.5px;color:var(--ink-2)">${esc(t)}</p>`).join("")}
+      ${f.stream ? `<div class="callout" style="margin-top:12px"><b>${esc(f.stream)}</b></div>` : ""}
+    </section>
+    ${f.relation ? `<section class="blk"><div class="special">
+      <div class="lab">LEADERBOARD</div>
+      <div class="hl" style="font-size:15px;line-height:1.5">${esc(f.relation)}</div>
+    </div></section>` : ""}
+    <section class="blk"><h3>Official</h3>
+      <div class="sns-btns">${(f.links || []).map(l => `
+        <a href="${esc(l.url)}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${SNS_PATH[l.kind] || ""}"/></svg>
+          <span>${esc(l.label)}</span></a>`).join("")}</div>
+      ${(f.series_note || []).map(t => `<div class="callout" style="margin-top:10px">${esc(t)}</div>`).join("")}
+    </section>
+    ${footHTML()}`;
 }
 
 /* ── INFO ─────────────────────────────────────────────────────────── */
@@ -677,10 +805,38 @@ function renderInfo() {
       <div class="chips" style="flex-wrap:wrap;gap:6px">
         ${[...new Set(DATA.events.map(e => e.format))].map(f => `<span class="fmt ${fmtClass(f)}">${esc(f)}</span>`).join("")}
       </div>
-      <div class="callout">${DATA.events.some(e => e.satellite)
-        ? "<b>JOPT</b> は JAPAN OPEN POKER TOUR サテライト対象、" : ""}<b>PREMIER</b> / <b>ECLIPSE</b> はシリーズ内の上位区分です。</div>
+      ${(DATA.series.format_notes || []).map(n => `<div class="callout"><b>${esc(n.tag)}</b>　${esc(n.text)}</div>`).join("")}
+      ${DATA.events.some(e => e.satellite)
+        ? '<div class="callout"><b>JOPT</b>　JAPAN OPEN POKER TOUR のサテライト対象です。</div>' : ""}
     </section>
+    ${contactHTML()}
     ${footHTML()}`;
+}
+/* ECLIPSE の案内。**その印が付いたトーナメントのページにだけ**出す
+   （INFO にまとめると、対象の回を見ている人に届かない。2026-10-01 本人指示） */
+function eclipseHTML(ev) {
+  const ec = DATA.series.eclipse;
+  if (!ec || !ev || !(ev.tags || []).includes("ECLIPSE")) return "";
+  return `<section class="blk"><div class="special">
+    <div class="lab">${esc(ec.title)}</div>
+    ${ec.lines.map((l, i) => i === 0
+      ? `<div class="hl" style="font-size:15px;line-height:1.5">${esc(l)}</div>`
+      : `<div class="bd" style="margin-top:${i === 1 ? 8 : 2}px">${esc(l)}</div>`).join("")}
+  </div></section>`;
+}
+/* 連絡先。**メールアドレスはページに出さない**（本人指示 2026-10-01）。
+   静的なページなので受け口を持てず、Googleフォームへ飛ばす。
+   回答は本人にメールで通知される。 */
+function contactHTML() {
+  const ct = DATA.series.contact;
+  const href = ct && (ct.form_url || (ct.email && `mailto:${ct.email}`));
+  if (!href) return "";
+  return `<section class="blk">
+    <h3>${esc(ct.label || "Contact")}</h3>
+    <p style="margin:0 0 12px;font-size:13px;color:var(--ink-2)">${esc(ct.text || "")}</p>
+    <a class="btn" href="${esc(href)}"${ct.form_url ? ' target="_blank" rel="noopener"' : ""}>${
+      esc(ct.button || "連絡する")}</a>
+  </section>`;
 }
 function footHTML() {
   return `<footer class="foot">
@@ -773,6 +929,7 @@ function detailHTML(ev) {
         <div class="hl">${esc(ev.special.headline)}</div>
         ${ev.special.body ? `<div class="bd">${esc(ev.special.body)}</div>` : ""}
       </div></section>` : ""}
+      ${eclipseHTML(ev)}
 
       ${prizeBlock ? `<section class="blk"><h3>Tournament Prize</h3>${prizeBlock}
         ${ev.prize_note ? `<div class="prizenote">${esc(ev.prize_note)}</div>` : ""}</section>` : ""}
@@ -782,11 +939,12 @@ function detailHTML(ev) {
       <section class="blk">
         <h3>Leaderboard Point</h3>
         <div class="lbrule">
-          <div class="mult">倍率 ×${mult}</div>
           <ul class="notes">
-            <li>優勝ポイント ＝ 総エントリー数 × 10（最低 200）× ${mult}${r ? ` ＝ ${r.base}（${r.entries} エントリー）` : ""}</li>
+            <li>優勝ポイント ＝ 総エントリー数 × 10（最低 200）${
+              mult === 1 ? "" : ` × ${mult}（<b>PREMIER</b>）`}${
+              r ? ` ＝ ${r.base}（${r.entries} エントリー）` : ""}</li>
             <li>以下1順位ごとに上位ポイントの 50%（5ポイント単位で切り上げ）。10ポイント未満は付与なし</li>
-            <li>エントリーポイント ＝ 本人のエントリー数 × 10 × ${mult}</li>
+            <li>エントリーポイント ＝ 本人のエントリー数 × 10${mult === 1 ? "" : ` × ${mult}`}</li>
           </ul>
         </div>
       </section>
@@ -801,6 +959,7 @@ function detailHTML(ev) {
         </div>
         ${ev.venue_extra ? `<div class="vx">${esc(ev.venue_extra)}</div>` : ""}
       </section>
+      <button class="back-bottom" id="backBtn2">← BACK</button>
       ${footHTML()}
     </div>
   </div>`;
@@ -812,6 +971,7 @@ function render(toTop) {
       state.tab === "schedule" ? renderSchedule()
     : state.tab === "results" ? renderResults()
     : state.tab === "leaderboard" ? renderLeaderboard()
+    : state.tab === "feature" ? renderFeature()
     : renderInfo();
   document.querySelectorAll("#tabs .tab").forEach(t =>
     t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
@@ -840,9 +1000,10 @@ document.addEventListener("click", ev => {
   const day = t.closest("[data-day]");
   if (day) { state.day = day.dataset.day; render(); return; }
   if (t.closest("[data-lball]")) { state.lbAll = true; render(); return; }
+  if (t.closest("[data-ring]")) { openRing(); return; }
   const row = t.closest("[data-ev]");
   if (row) { openDetail(row.dataset.ev); return; }
-  if (t.closest("#backBtn")) { closeDetail(); return; }
+  if (t.closest("#backBtn") || t.closest("#backBtn2")) { closeDetail(); return; }
 });
 document.addEventListener("keydown", ev => {
   if (ev.key === "Escape" && document.getElementById("sheet")) closeDetail();
@@ -888,9 +1049,12 @@ function measureTop() {
       ? DATA.series.short_name : sname;
   }
   document.getElementById("topSub").textContent = DATA.series.tagline;
+  const ft = DATA.series.feature;
+  const ftab = document.getElementById("featTab");
+  if (ft && ftab) { ftab.textContent = ft.tab || "SPECIAL"; ftab.hidden = false; }
   const st = document.getElementById("topState");
-  st.textContent = DATA.series.status === "live" ? "LIVE"
-    : DATA.series.status === "upcoming" ? "COMING" : "FINISHED";
+  st.textContent = seriesState();
+  st.classList.toggle("live", /^Day /.test(st.textContent));
   if (DATA.series.status === "live") st.classList.add("live");
   render();
   measureTop();

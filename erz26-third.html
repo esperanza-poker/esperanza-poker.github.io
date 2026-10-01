@@ -94,6 +94,9 @@ a{color:var(--brand-text)}
 }
 .banner .meta{margin-top:12px;font-size:12.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:6px 16px}
 .banner .meta b{color:var(--ink);font-weight:500}
+.metalink{font:inherit;color:var(--brand-text);border-bottom:1px solid var(--brand-line);padding:0 0 1px}
+.metalink b{color:var(--brand-text);font-weight:700}
+.metalink:hover{border-bottom-color:var(--brand-text)}
 
 /* ── フィルタ ─────────────────────────────────────────────────────── */
 .filters{position:sticky;top:var(--topbar,104px);z-index:30;background:var(--ground);padding:12px 0 10px;border-bottom:1px solid var(--line-soft)}
@@ -502,6 +505,10 @@ function renderSchedule() {
       <div class="period">${esc(s.period.label)}</div>
       <div class="meta">
         <span><b>${DATA.events.length}</b> tournaments</span>
+        ${/* RING ARENA は開催日の行にしか出ないので、上にも置いて見つけられるようにする */""}
+        ${DATA.ring && DATA.ring.dates.length
+          ? `<button class="metalink" data-ring="1">${esc(DATA.ring.title)} <b>${DATA.ring.dates.length}</b> nights</button>`
+          : ""}
         ${totalEntries() ? `<span><b>${totalEntries()}</b> entries</span>` : ""}
         <span>Main Venue <b>${esc(s.venue.name)}</b></span>
       </div>
