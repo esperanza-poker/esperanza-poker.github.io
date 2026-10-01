@@ -510,8 +510,10 @@ function renderSchedule() {
    種目フィルタやお気に入り表示のときはトーナメントだけを見たいので出さない。 */
 function ringOn(d) {
   const r = DATA.ring;
-  return !!(r && (r.dates || []).includes(d))
-      && state.fmt === "ALL" && !state.satOnly && !state.favOnly;
+  if (!r || !(r.dates || []).includes(d)) return false;
+  // 日付タブの絞り込みも見る。見ないと**選んだ日以外のリング開催日まで残る**
+  if (state.day !== "ALL" && state.day !== d) return false;
+  return state.fmt === "ALL" && !state.satOnly && !state.favOnly;
 }
 function ringRowHTML(d) {
   if (!ringOn(d)) return "";
