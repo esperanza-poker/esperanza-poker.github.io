@@ -659,7 +659,8 @@ function cdItems(now) {
   const xs = DATA.events.map(e => ({ e, s: evStart(e), r: evRegEnd(e) }));
   const late = xs.filter(v => now >= v.s && now < v.r).sort((a, b) => a.r - b.r)
                  .map(v => ({ ev: v.e, kind: "late", at: v.r }));
-  const soon = xs.filter(v => v.s > now).sort((a, b) => a.s - b.s)
+  // 1日以上先の開始は出さない（本人指示 2026-10-04）。先すぎて意味がないため
+  const soon = xs.filter(v => v.s > now && v.s - now <= 86400000).sort((a, b) => a.s - b.s)
                  .map(v => ({ ev: v.e, kind: "start", at: v.s }));
   return late.concat(soon).slice(0, 2);
 }
