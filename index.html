@@ -128,4 +128,37 @@ a{color:inherit;text-decoration:none}
   </div>
   <div class="foot">ESPERANZA / fiato cafe</div>
 </main>
+<script>
+/* ホーム画面に追加した Web アプリは、**復帰しても読み直さない**（本人指摘 2026-10-04）。
+   さらに GitHub Pages は `max-age=600` なので、10分間はキャッシュを見にすら行かない。
+   そこで**戻ってきたときにサーバへ版を聞き、変わっていたときだけ**読み直す。
+   ⚠️ 公開サイト（github.io）でだけ動かす —— 確認用の Artifact で回すと
+   毎回ETagが変わって無限に読み直しかねない。 */
+(function () {
+  if (location.protocol !== "https:" || !/\.github\.io$/.test(location.hostname)) return;
+  var mine = null, hiddenAt = 0, busy = false;
+  function ask() {
+    // キャッシュを必ず外す。GitHub Pages はクエリを無視して同じ ETag を返す
+    return fetch(location.pathname + "?v=" + Date.now(), { method: "HEAD", cache: "no-store" })
+      .then(function (r) { return r.headers.get("etag") || r.headers.get("last-modified"); })
+      .catch(function () { return null; });
+  }
+  ask().then(function (t) { mine = t; });
+  function check() {
+    if (busy || !mine) return;
+    busy = true;
+    ask().then(function (t) {
+      busy = false;
+      if (t && t !== mine) location.reload();
+    });
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    if (Date.now() - hiddenAt < 60000) return;   // 一瞬の切り替えでは何もしない
+    check();
+  });
+  // 戻る/進むの復元（bfcache）から戻ったときも
+  addEventListener("pageshow", function (e) { if (e.persisted) check(); });
+})();
+</script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "30f953be86ea47b7912be6d048034b6c"}'></script>
