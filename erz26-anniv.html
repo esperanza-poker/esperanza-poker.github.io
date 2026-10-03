@@ -64,9 +64,19 @@ a{color:var(--brand-text)}
 }
 .top-in{display:flex;align-items:center;gap:14px;padding:12px 18px;max-width:var(--wrap);margin:0 auto}
 .mark{flex:none;height:36px;width:auto;display:block}
-.top-txt{min-width:0;flex:1}
-.top-name{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:-.02em;line-height:1.15}
-.top-sub{font-size:11px;color:var(--ink-3);letter-spacing:.14em;font-family:var(--display);font-weight:600;text-transform:uppercase}
+.top-txt{min-width:0;flex:0 1 auto}
+.top-name{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:-.02em;line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 副題は**主題と同じ幅**に組む（本人指示 2026-10-02）。
+   ⚠️ `width:0; min-width:100%` が肝 —— これが無いと副題の素の幅が
+   入れ物の幅を決めてしまい、主題より広くなって揃わない。
+   幅を0と見せかけて親の幅いっぱいに敷く、という書き方。
+   ⚠️ 両端揃え（text-align-last:justify）は**単語の間だけが開く**ので
+   「TOURNAMENT      SERIES」と不自然に離れる。字送りで均等に散らす
+   （実際の調整は fitSubtitle）。 */
+.top-sub{font-size:10.5px;color:var(--ink-3);font-family:var(--display);font-weight:600;
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;letter-spacing:0;
+  width:0;min-width:100%}
 .state{
   flex:none;font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.12em;
   padding:4px 9px;border:1px solid var(--brand);color:var(--brand-text);white-space:nowrap;
@@ -88,9 +98,43 @@ a{color:var(--brand-text)}
   letter-spacing:-.035em;line-height:1;text-wrap:balance;
 }
 .banner h1 .titlelogo{display:block;width:100%;max-width:480px;height:auto}
-.top-name .titlelogo{display:block;height:19px;width:auto}
+.top-name .titlelogo{display:block;height:19px;width:auto;max-width:100%;object-fit:contain;object-position:left}
+/* 開始・レイト締切のカウントダウン。押すとそのトーナメントが開く。
+   **環境で崩れないこと**が要件なので、幅が足りなければ行ごと折り返し、
+   見出し側だけを縮める（時間は絶対に欠けさせない）。 */
+/* タイマーは**2つで1かたまり**。#01 と #02 が別の行に分かれると読みにくいので
+   折り返さない（2つで入らない幅では、かたまりごと次の行へ送る）。 */
+.cds{display:flex;gap:8px;flex-wrap:nowrap;min-width:0}
+.cds:empty{display:none}
+/* 320px 級のごく狭い画面だけは、はみ出すより折り返す */
+@media (max-width:355px){.cds{flex-wrap:wrap}}
+/* 狭い画面はヘッダーの余白を詰める（主題のロゴが縮むのを少しでも遅らせる） */
+@media (max-width:360px){.top-in{gap:10px;padding:12px 12px}}
+.cd{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;cursor:pointer;flex:none;
+  border:1px solid var(--brand-line);background:var(--brand-pale);
+  color:var(--brand-text);font-family:var(--display)}
+.cd:hover{border-color:var(--brand-text)}
+/* ⚠️ 状態が変わっても**箱の幅を動かさない**（本人指示 2026-10-02）。
+   ラベルは `LATE REG:` が、時間は `10:24:47` が最長なので、そこに幅を固定する。 */
+.cd .tk{flex:none;font-weight:700;font-size:9.5px;letter-spacing:.06em;white-space:nowrap}
+.cd .tl{flex:none;font-weight:700;font-size:8.5px;letter-spacing:.06em;opacity:.75;white-space:nowrap;
+  min-width:50px}
+.cd .tv{flex:none;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;
+  min-width:62px;text-align:right}
+/* レイト受付が開いている間は色を変える（締切を見落とさせない） */
+.cd.late{border-color:var(--live);background:transparent;color:var(--live)}
+.cd.late:hover{border-color:var(--live)}
+/* 締切後の進行中は主張させない */
+.cd.run{border-color:var(--line);background:var(--surface);color:var(--ink-2)}
+.period-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.sns-mini{display:flex;gap:6px;flex:none}
+.sns-mini a{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  transition:border-color .12s,color .12s}
+.sns-mini a:hover{border-color:var(--brand);color:var(--brand-text)}
+.sns-mini svg{width:16px;height:16px;display:block}
 .banner .period{
-  display:inline-block;margin-top:12px;background:var(--brand-fill);color:var(--on-brand);
+  display:inline-block;background:var(--brand-fill);color:var(--on-brand);
   font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.02em;padding:4px 10px;
 }
 .banner .meta{margin-top:12px;font-size:12.5px;color:var(--ink-2);display:flex;flex-wrap:wrap;gap:6px 16px}
@@ -275,9 +319,13 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
   display:block;width:100%;height:auto;max-height:420px;object-fit:contain;
   background:var(--surface-2);border-bottom:1px solid var(--line);
 }
-.resmeta{display:flex;border-bottom:1px solid var(--line)}
-.resmeta > div{flex:1;padding:9px 12px;border-right:1px solid var(--line)}
+/* 項目が4つになるので折り返す。狭い画面では2列×2段 */
+.resmeta{display:flex;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.resmeta > div{flex:1 1 25%;min-width:104px;padding:9px 12px;
+  border-right:1px solid var(--line);border-bottom:1px solid var(--line-soft)}
 .resmeta > div:last-child{border-right:0}
+.resmeta .sub{font-size:10px;color:var(--ink-3);margin-top:2px;white-space:nowrap}
+.resmeta .big.sm{font-size:16px}
 .resmeta .lab{font-family:var(--display);font-weight:700;font-size:9.5px;letter-spacing:.12em;color:var(--ink-3)}
 .resmeta .big{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:1px}
 .fin{display:flex;flex-direction:column;padding:4px 12px 10px}
@@ -309,6 +357,31 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
   font-family:var(--display);font-weight:700;font-size:9.5px;letter-spacing:.11em;color:var(--brand-text);
 }
 .lbtbl .cutline::after{content:"";flex:1;height:1px;background:var(--brand)}
+/* 上位3人は表ではなく札で大きく出す（1〜20位が単調なため。本人指示 2026-10-03）。
+   同率が並べば p1 が2枚になることもある。 */
+.podium{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.pod{display:flex;align-items:center;gap:14px;padding:13px 15px;background:var(--surface);
+  border:1px solid var(--line-soft);border-left:3px solid var(--line)}
+.pod .pr{flex:none;min-width:34px;text-align:center;font-family:var(--display);font-weight:800;
+  font-size:26px;line-height:1;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.pod .pb{flex:1;min-width:0}
+.pod .pn{font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.01em;overflow-wrap:anywhere}
+.pod .pc{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:2px}
+.pod .pp{flex:none;font-family:var(--display);font-weight:800;font-size:22px;
+  color:var(--brand-text);font-variant-numeric:tabular-nums}
+.pod .pp span{font-size:11px;margin-left:3px;color:var(--ink-3)}
+.pod.p1{border-left-color:var(--gold);padding:18px 15px;
+  background:linear-gradient(180deg,#FBF4E6,var(--surface) 70%)}
+.pod.p1 .pr{font-size:34px;color:var(--gold)}
+.pod.p1 .pn{font-size:25px}
+.pod.p1 .pp{font-size:28px;color:var(--gold)}
+.pod.p2{border-left-color:var(--ink-3)}
+.pod.p3{border-left-color:var(--brand-line)}
+@media (max-width:420px){
+  .pod{gap:10px;padding:11px 12px}
+  .pod .pn{font-size:17px}.pod.p1 .pn{font-size:20px}
+  .pod .pp{font-size:19px}.pod.p1 .pp{font-size:23px}
+}
 .callout{border-left:3px solid var(--brand);padding:2px 0 2px 12px;font-size:12.5px;color:var(--ink-2);margin-top:14px}
 .callout b{color:var(--ink);font-weight:500}
 .more{margin-top:14px}
@@ -318,6 +391,36 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
 }
 .btn:hover{background:var(--brand-pale)}
 
+/* その日の見どころ。バナーはオレンジの帯だけを切り出した横長版 */
+.feat{margin:16px 0 4px}
+.feat-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.feat-head .fh{font-family:var(--display);font-weight:800;font-size:11.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--brand-text)}
+.feat-head .fd{font-family:var(--display);font-weight:700;font-size:11.5px;color:var(--ink-3)}
+.feat-strip{display:flex;gap:10px}
+.feat-card{display:block;padding:0;border:1px solid var(--line-soft);background:var(--surface);
+  width:100%;flex:none;transition:border-color .12s,transform .12s;cursor:pointer}
+.feat-card:hover{border-color:var(--brand);transform:translateY(-1px)}
+.feat-card img{display:block;width:100%;height:auto}
+/* 2本以上の日（土曜）は器の中だけで横スクロールし、次の1枚を覗かせる */
+.feat-strip.multi{overflow-x:auto;scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;padding-bottom:4px}
+.feat-strip.multi .feat-card{width:88%;scroll-snap-align:start}
+@media (min-width:700px){.feat-strip.multi .feat-card{width:calc(50% - 5px)}}
+
+/* 招待選手。写真は優勝写真なので横長。1列で大きく出す */
+.champs{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+.champ{background:var(--surface)}
+.cphoto{display:block;width:100%;height:auto}
+.cphoto.none{aspect-ratio:3/2;background:var(--surface-2)}
+.cbody{padding:13px 14px}
+.cname{font-family:var(--display);font-weight:800;font-size:19px;letter-spacing:-.01em}
+.cwon{margin-top:5px;font-size:13.5px;color:var(--ink-2);overflow-wrap:anywhere}
+.crow{display:flex;gap:10px;align-items:baseline;margin-top:7px;font-size:13px}
+.crow .ck{flex:none;min-width:48px;font-family:var(--display);font-weight:700;font-size:9.5px;
+  letter-spacing:.12em;color:var(--ink-3)}
+.crow .cv{flex:1;min-width:0;overflow-wrap:anywhere}
+.crow .cv.link{text-align:left;color:var(--brand-text);border-bottom:1px solid var(--brand-line)}
 .featimg{display:block;width:100%;height:auto;border:1px solid var(--line-soft)}
 .sns-btns{display:flex;gap:9px;flex-wrap:wrap}
 .sns-btns a{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;
@@ -343,12 +446,14 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
       <div class="top-name" id="topName">—</div>
       <div class="top-sub" id="topSub">tournament series</div>
     </div>
+    <div class="sns-mini" id="topSns"></div>
     <div class="state" id="topState">—</div>
   </div>
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="schedule" aria-selected="true">SCHEDULE</button>
     <button class="tab" role="tab" data-tab="results" aria-selected="false">RESULTS</button>
     <button class="tab" role="tab" data-tab="leaderboard" aria-selected="false">LEADERBOARD</button>
+    <button class="tab" role="tab" data-tab="champions" aria-selected="false" id="champTab" hidden>—</button>
     <button class="tab" role="tab" data-tab="feature" aria-selected="false" id="featTab" hidden>—</button>
     <button class="tab" role="tab" data-tab="info" aria-selected="false">INFO</button>
   </nav>
@@ -410,9 +515,13 @@ function leaderboard() {
   const add = (name, pts, opt) => {
     const n = canon((name || "").trim());
     if (!n || !pts) return;
-    const cur = by.get(n) || {name:n, points:0, cashes:0, best:99, rings:0};
+    const cur = by.get(n) || {name:n, points:0, wins:0, cashes:0, best:99, rings:0};
     cur.points += pts;
-    if (opt && opt.place) { cur.cashes++; cur.best = Math.min(cur.best, opt.place); }
+    if (opt && opt.place) {
+      // 優勝は入賞に数えない（二重に見えるため。本人指示 2026-10-03）
+      if (opt.place === 1) cur.wins++; else cur.cashes++;
+      cur.best = Math.min(cur.best, opt.place);
+    }
     if (opt && opt.ring) cur.rings++;
     by.set(n, cur);
   };
@@ -486,6 +595,147 @@ function rowHTML(ev) {
 function totalEntries() {
   return DATA.events.reduce((s,e) => s + ((RESULTS[e.id] || {}).entries || 0), 0);
 }
+/* その日の『見どころ』。**バナー画像を置いたトーナメントだけ**を出す。
+   明け方のターボ系は data の `feature: false` で外してある（2026-10-02 本人指示）。
+   平日はほぼ1枚、土曜は大きい回が2つ並ぶのでその日の分をまとめて出す。 */
+function featureEvents() {
+  const B = DATA.banners || {};
+  const list = eventsSorted().filter(e => B[e.id] && e.feature !== false);
+  if (!list.length) return { label: "", evs: [] };
+  const now = new Date();
+  // ⚠️ 切り替えは**その日の最後の見どころのレイト締切**（本人指示 2026-10-04）。
+  //    締切が切れればもう入れないので、卓に残っている人には
+  //    翌日の注目イベントを見せたほうがよい。
+  const ahead = list.filter(e => evRegEnd(e) > now).sort((a, b) => evStart(a) - evStart(b));
+  if (!ahead.length) return { label: "", evs: [] };      // 会期が終わった
+  const day = ahead[0].date;
+  const evs = list.filter(e => e.date === day);
+  // その日がまだ進行中の日なら TODAY、先出しなら NEXT
+  return { label: day === playDay() ? "Today's Feature" : "Next Feature", evs };
+}
+function featureHTML() {
+  const f = featureEvents();
+  if (!f.evs.length) return "";
+  const B = DATA.banners, p = dparts(f.evs[0].date);
+  return `<section class="feat">
+    <div class="feat-head"><span class="fh">${f.label}</span>
+      <span class="fd">${p.md} ${p.w}</span></div>
+    <div class="feat-strip${f.evs.length > 1 ? " multi" : ""}">
+      ${f.evs.map(e => `<button class="feat-card" data-ev="${e.id}"
+        aria-label="#${String(e.no).padStart(2, "0")} ${esc(e.title)} の詳細">
+        <img src="${B[e.id]}" alt="#${String(e.no).padStart(2, "0")} ${esc(e.title)}">
+      </button>`).join("")}
+    </div>
+  </section>`;
+}
+/* 会期の右に置く店のアカウント。アイコンだけで、読み上げには名前を持たせる */
+/* 予定表の時刻を実時刻に直す。**日付は営業日（正午区切り）**なので、
+   午前の時刻はその翌日、`24:00` は翌日の0時として読む。
+   例: 10-02 の `23:00` は10/2の夜、同じ 10-02 の `03:30` は10/3の明け方。 */
+function evTime(dateISO, hhmm) {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  let [h, mi] = String(hhmm).split(":").map(Number);
+  let plus = 0;
+  if (h >= 24) { h -= 24; plus = 1; } else if (h < 12) { plus = 1; }
+  return new Date(y, m - 1, d + plus, h, mi || 0, 0, 0);
+}
+const evStart = e => evTime(e.date, e.start);
+function evRegEnd(e) {
+  const s = evStart(e), r = evTime(e.date, e.reg_end);
+  if (r <= s) r.setDate(r.getDate() + 1);   // 締切が開始より前に出たら翌日
+  return r;
+}
+/* 終了予定。シートの END（`end`）が入っていればそれ、無ければレイト締切まで */
+function evEnd(e) {
+  const s = evStart(e);
+  if (!e.end) return evRegEnd(e);
+  const x = evTime(e.date, e.end);
+  if (x <= s) x.setDate(x.getDate() + 1);
+  return x;
+}
+/* 出すのは **START と LATE REG の2つだけ**、最大2件（2026-10-02 本人指示）。
+   レイト締切を過ぎた回は出さない —— 行が増えると下のバナーが遠くなるため。 */
+function cdItems(now) {
+  const xs = DATA.events.map(e => ({ e, s: evStart(e), r: evRegEnd(e) }));
+  const late = xs.filter(v => now >= v.s && now < v.r).sort((a, b) => a.r - b.r)
+                 .map(v => ({ ev: v.e, kind: "late", at: v.r }));
+  const soon = xs.filter(v => v.s > now).sort((a, b) => a.s - b.s)
+                 .map(v => ({ ev: v.e, kind: "start", at: v.s }));
+  return late.concat(soon).slice(0, 2);
+}
+function hms(ms) {
+  const t = Math.max(0, Math.floor(ms / 1000)), p = n => String(n).padStart(2, "0");
+  const d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600),
+        m = Math.floor(t % 3600 / 60), sec = t % 60;
+  return d ? `${d}日 ${h}:${p(m)}` : `${h}:${p(m)}:${p(sec)}`;
+}
+function cdItemHTML(c, now) {
+  return `<button class="cd ${c.kind}" data-ev="${c.ev.id}">
+    <span class="tk">#${String(c.ev.no).padStart(2, "0")}</span>
+    <span class="tl">${c.kind === "late" ? "LATE REG:" : "START:"}</span>
+    <b class="tv">${hms(c.at - now)}</b></button>`;
+}
+function countdownHTML() { return '<div class="cds" id="cds"></div>'; }
+/* 毎秒ここが全部書き換える。残り時間だけでなく、
+   レベル・進行中/次の回 と**出すものそのものが変わる**ため */
+function tickCountdown() {
+  // 開いたまま日付をまたぐことがあるので、Day表示もここで見直す
+  const st = document.getElementById("topState");
+  if (st) {
+    st.textContent = seriesState();
+    st.classList.toggle("live", /^Day /.test(st.textContent));
+  }
+  const el = document.getElementById("cds");
+  if (!el) return;
+  const now = new Date();
+  el.innerHTML = cdItems(now).map(v => cdItemHTML(v, now)).join("");
+}
+setInterval(tickCountdown, 1000);
+
+
+
+/* 副題「TOURNAMENT SERIES」を主題と同じ幅に広げる。
+   **字送りを全体に散らす**ので、単語の間だけが開くことがない。
+   入れ物の幅はCSSの `width:0; min-width:100%` で主題と同じになっているので、
+   目標は `clientWidth` をそのまま使えばよい。中身の幅は Range で測る
+   （要素の箱を測ると親の幅が返ってきて、常に一致してしまう）。 */
+function fitSubtitle() {
+  const sb = document.getElementById("topSub");
+  if (!sb) return;
+  const chars = (sb.textContent || "").trim().length;
+  if (chars < 2) return;
+  const inner = () => {
+    const r = document.createRange(); r.selectNodeContents(sb);
+    return r.getBoundingClientRect().width;
+  };
+  sb.style.fontSize = ""; sb.style.letterSpacing = "0px"; sb.style.marginRight = "0px";
+  const target = sb.clientWidth;
+  if (!target) return;
+  let nat = inner();
+  if (!nat) return;
+  if (nat > target) {                       // 字送りで詰めきれないときは字を小さく
+    const base = parseFloat(getComputedStyle(sb).fontSize) || 10.5;
+    sb.style.fontSize = Math.max(6, base * target / nat).toFixed(2) + "px";
+    nat = inner();
+  }
+  const add = Math.min(6, Math.max(-0.4, (target - nat) / chars));
+  sb.style.letterSpacing = add.toFixed(3) + "px";
+  sb.style.marginRight = (-add).toFixed(3) + "px";   // 最後の1文字の後ろぶんを打ち消す
+}
+// 主題はロゴ画像で、幅は後から決まる・画面幅でも変わる。入れ物を見張って組み直す
+if (window.ResizeObserver) {
+  new ResizeObserver(fitSubtitle).observe(document.getElementById("topSub"));
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSubtitle);
+
+function snsMiniHTML() {
+  const list = DATA.series.sns || [];
+  if (!list.length) return "";
+  return `<div class="sns-mini">${list.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener"
+    aria-label="${esc(l.label)} ${esc(l.account || "")}" title="${esc(l.account || l.label)}">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="${SNS_PATH[l.kind] || ""}"/></svg>
+  </a>`).join("")}</div>`;
+}
 function renderSchedule() {
   const evs = eventsSorted().filter(passFilter);
   const dates = [...new Set(eventsSorted().map(e => e.date))];
@@ -512,7 +762,10 @@ function renderSchedule() {
       <h1>${s.title_logo
         ? `<img class="titlelogo" src="${s.title_logo}" alt="${esc(s.name)}">`
         : esc(s.name)}</h1>
-      <div class="period">${esc(s.period.label)}</div>
+      <div class="period-row">
+        <div class="period">${esc(s.period.label)}</div>
+        ${countdownHTML()}
+      </div>
       <div class="meta">
         <span><b>${DATA.events.length}</b> tournaments</span>
         ${/* RING ARENA は開催日の行にしか出ないので、上にも置いて見つけられるようにする */""}
@@ -523,6 +776,7 @@ function renderSchedule() {
         <span>Main Venue <b>${esc(s.venue.name)}</b></span>
       </div>
     </div>
+    ${featureHTML()}
     <div class="filters">
       <div class="chips">
         ${fmts.map(f => `<button class="chip" data-fmt="${f}" aria-pressed="${state.fmt===f}">${f}</button>`).join("")}
@@ -588,7 +842,13 @@ function finishersHTML(ev, r) {
   return `<div class="resbox">
     ${photo ? `<img class="resphoto" src="${photo}" alt="#${String(ev.no).padStart(2,"0")} ${esc(ev.title)} の結果写真" loading="lazy">` : ""}
     <div class="resmeta">
-      <div><div class="lab">ENTRIES</div><div class="big">${r.entries}</div></div>
+      <div><div class="lab">ENTRIES</div><div class="big">${r.entries}</div>${
+        r.entries_first != null ? `<div class="sub">初回 ${r.entries_first} ＋ Re ${r.reentries}</div>` : ""}</div>
+      ${/* アドオンの内訳は会計表（日別シート）から。Free と Late でスタックが違う */""}
+      ${r.addons != null ? `<div><div class="lab">ADD-ON</div><div class="big">${r.addons}</div>
+        <div class="sub">Free ${r.addons_free} ＋ Late ${r.addons_late}</div></div>` : ""}
+      ${r.stack_total != null ? `<div><div class="lab">STACK</div>
+        <div class="big sm">${r.stack_total.toLocaleString("ja-JP")}</div></div>` : ""}
       <div><div class="lab">優勝ポイント</div><div class="big">${r.base.toLocaleString("ja-JP")}</div></div>
     </div>
     <div class="fin">${rows}</div>
@@ -615,7 +875,9 @@ function renderResults() {
       <div class="meta">
         <span><b>${done.length}</b> / ${DATA.events.length} tournaments</span>
         <span><b>${totalEntries()}</b> entries</span>
-        <span>RING <b>${RINGS.length}</b> nights</span>
+        ${/* 夜数ではなくエントリー数で出す（本人指示 2026-10-03）。
+             ring_results[].entries に入れる */""}
+        <span>RING <b>${RINGS.reduce((n, r) => n + (r.entries || 0), 0)}</b> entries</span>
       </div>
     </div>
     ${done.length ? body : '<p class="empty">結果はまだありません。</p>'}
@@ -637,37 +899,72 @@ function ringResultsHTML() {
 }
 
 /* ── LEADERBOARD ──────────────────────────────────────────────────── */
+/* 同率は**上位の同順位**（1,2,2,4…）。特典の区切りも順位で引くので、
+   5位に3人並べばその3人とも「1-5位プライズ」に入る（本人指示 2026-10-03）。 */
+function withRanks(lb) {
+  let rank = 0, prev = null, n = 0;
+  return lb.map(p => {
+    n++;
+    if (prev === null || p.points !== prev) { rank = n; prev = p.points; }
+    return Object.assign({}, p, { rank });
+  });
+}
+const CUTS = [[5, "1 - 5位 プライズ"], [10, "6 - 10位 プライズ"],
+              [20, "11 - 20位 抽選プライズ"], [Infinity, "21位以下"]];
+const cutOf = r => (CUTS.find(c => r <= c[0]) || CUTS[CUTS.length - 1])[1];
+const recOf = p => [p.wins ? "優勝:" + p.wins : "", p.cashes ? "入賞:" + p.cashes : "",
+                    p.rings ? "RING:" + p.rings : ""].filter(Boolean).join(" / ");
+
 function renderLeaderboard() {
-  const lb = leaderboard();
+  const all = withRanks(leaderboard());
   const lbd = DATA.leaderboard;
-  const limit = state.lbAll ? lb.length : 20;
-  const cuts = {0:"1 - 5位 プライズ", 5:"6 - 10位 プライズ", 10:"11 - 20位 抽選プライズ", 20:"21位以下"};
+  let limit = state.lbAll ? all.length : 20;
+  // ⚠️ 20人目で機械的に切ると**同率の片方だけが隠れる**（本人指摘 2026-10-03）。
+  //    同じ順位の人は最後まで出し切る。
+  if (limit < all.length) {
+    const r = all[limit - 1].rank;
+    while (limit < all.length && all[limit].rank === r) limit++;
+  }
+  const shown = all.slice(0, limit);
+  const pod = shown.filter(p => p.rank <= 3);
+  const rest = shown.filter(p => p.rank > 3);
+  let last = pod.length ? cutOf(pod[0].rank) : null;
   let rows = "";
-  lb.slice(0, limit).forEach((p,i) => {
-    if (cuts[i]) rows += `<tr class="cut"><td colspan="4"><div class="cutline">${cuts[i]}</div></td></tr>`;
-    const rec = [p.cashes ? p.cashes + "入賞" : "", p.rings ? p.rings + "R" : ""].filter(Boolean).join(" / ");
-    rows += `<tr class="${i < 3 ? "top3" : ""}">
-      <td class="rk">${i+1}</td>
+  rest.forEach(p => {
+    const c = cutOf(p.rank);
+    if (c !== last) { rows += `<tr class="cut"><td colspan="4"><div class="cutline">${c}</div></td></tr>`; last = c; }
+    rows += `<tr>
+      <td class="rk">${p.rank}</td>
       <td class="pl">${esc(p.name)}</td>
-      <td class="r cs">${rec}</td>
+      <td class="r cs">${recOf(p)}</td>
       <td class="r pt">${p.points.toLocaleString("ja-JP")}</td></tr>`;
   });
+  const podHTML = pod.length ? `<div class="podium">
+      ${pod.map(p => `<div class="pod p${p.rank}">
+        <div class="pr">${p.rank}</div>
+        <div class="pb"><div class="pn">${esc(p.name)}</div>
+          ${recOf(p) ? `<div class="pc">${recOf(p)}</div>` : ""}</div>
+        <div class="pp">${p.points.toLocaleString("ja-JP")}<span>P</span></div>
+      </div>`).join("")}
+    </div>` : "";
   return `<div class="banner">
       <h1>Leaderboard</h1>
       <div class="meta">
-        ${lb.length ? `<span><b>${lb.length}</b> players</span>` : ""}
+        ${all.length ? `<span><b>${all.length}</b> players</span>` : ""}
         <span>${DATA.events.length} tournaments${RINGS.length ? ` + ${RINGS.length} ring nights` : ""}</span>
       </div>
     </div>
-    ${lb.length ? `
+    ${all.length ? `
     <section class="blk">
-      <table class="lbtbl">
+      ${pod.length ? `<div class="cutline" style="margin-bottom:10px">${cutOf(pod[0].rank)}</div>` : ""}
+      ${podHTML}
+      ${rows ? `<table class="lbtbl">
         <thead><tr><th>#</th><th>PLAYER</th><th class="r">RECORD</th><th class="r">POINT</th></tr></thead>
         <tbody>${rows}</tbody>
-      </table>
-      ${lb.length > limit ? `<div class="more"><button class="btn" data-lball="1">残り ${lb.length - limit} 人を表示</button></div>` : ""}
+      </table>` : ""}
+      ${all.length > limit ? `<div class="more"><button class="btn" data-lball="1">残り ${all.length - limit} 人を表示</button></div>` : ""}
     </section>` : ""}
-    ${lbd.point_rules && lbd.point_rules.length === 0 && !lb.length ? "" : `
+    ${lbd.point_rules && lbd.point_rules.length === 0 && !all.length ? "" : `
     <section class="blk">
       <h3>Point</h3>
       <div class="lbrule">
@@ -709,15 +1006,24 @@ function businessDate(t) {
   const d = new Date(t.getTime() - 12 * 3600 * 1000);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
+/* いま進行中の回、無ければ次に来る回の日付。Day表示と FEATURE の基準にする */
+function playDay() {
+  const now = new Date();
+  const ahead = DATA.events.map(e => ({ e, s: evStart(e), x: evEnd(e) }))
+                  .filter(v => v.x > now).sort((a, b) => a.s - b.s);
+  return ahead.length ? ahead[0].e.date : null;
+}
 function seriesState() {
   const pr = DATA.series.period;
   if (!pr || !pr.from) return "";
-  const ymd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-  const from = ymd(pr.from), to = ymd(pr.to), today = businessDate(new Date());
-  const DAY = 86400000;
-  if (today < from) return "COMING";
-  if (today > to) return "FINISHED";
-  return "Day " + (Math.round((today - from) / DAY) + 1);
+  const ymd = x => { const [y, m, d] = x.split("-").map(Number); return new Date(y, m - 1, d); };
+  const from = ymd(pr.from), now = new Date();
+  const cal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (cal < from) return "COMING";
+  // ⚠️ 正午で切ると**朝8時がまだ Day 1 のまま**になる（本人指摘 2026-10-03）
+  const d = playDay();
+  if (!d) return "FINISHED";
+  return "Day " + (Math.round((ymd(d) - from) / 86400000) + 1);
 }
 
 /* RING ARENA の詳細。トーナメントと同じ見た目のシートで開く */
@@ -752,6 +1058,54 @@ function openRing() {
     </div></div>`;
   document.body.style.overflow = "hidden";
 }
+
+/* Champion's Bounty。**前回のシリーズ終了から今回までに大型大会で優勝した会員**を招く。
+   載せるのは 名前 / 優勝したトーナメント / この回のどこにゲスト参戦するか の3つだけ
+   （2026-10-02 本人指示）。写真はその優勝写真をそのまま使う。 */
+/* 並びは**参戦トーナメントの番号順**で、**終わった回は最後方**へ送る
+   （2026-10-02 本人指示）。参戦先が未定の人はその間に置く。
+   `hidden` の人は出さない（参戦許可が取れていないなど。データは残す）。 */
+function champPlayers() {
+  const ch = DATA.series.champions || {};
+  const today = businessDate(new Date());
+  const ymd = s => { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, m - 1, d); };
+  // 深夜のトーナメントは前日の日付で並んでいるので、ev.date をそのまま使ってよい
+  const done = no => {
+    const ev = DATA.events.find(e => e.no === no);
+    return !!(ev && ev.date && ymd(ev.date) < today);
+  };
+  return (ch.players || []).filter(p => !p.hidden).map((p, i) => {
+    const no = p.guest_no || 0;
+    const rank = !no ? 1 : (done(no) ? 2 : 0);   // 0=これから 1=未定 2=終了
+    return { p, k: [rank, no || 0, i] };
+  }).sort((a, b) => a.k[0] - b.k[0] || a.k[1] - b.k[1] || a.k[2] - b.k[2])
+    .map(x => x.p);
+}
+
+function renderChampions() {
+  const ch = DATA.series.champions;
+  if (!ch) return renderInfo();
+  const pl = champPlayers();
+  return `<div class="banner"><h1>${esc(ch.title || "Champion's Bounty")}</h1>
+      ${ch.lead ? `<div class="meta"><span>${esc(ch.lead)}</span></div>` : ""}
+    </div>
+    <section class="blk">
+      <div class="champs">${pl.map(p => `<div class="champ">
+        ${p.photo_src
+          ? `<img class="cphoto" src="${p.photo_src}" alt="${esc(p.name)}" loading="lazy">`
+          : `<div class="cphoto none"></div>`}
+        <div class="cbody">
+          <div class="cname">${esc(p.name)}</div>
+          ${/* 優勝タイトルは見出しを付けず、末尾の「Winner」で示す（2026-10-02 本人指示） */""}
+          ${p.won ? `<div class="cwon">${esc(p.won)}</div>` : ""}
+          ${p.guest_in ? `<div class="crow"><span class="ck">GUEST</span>${
+            p.guest_no ? `<button class="cv link" data-ev="${esc(eventIdOf(p.guest_no))}">${esc(p.guest_in)}</button>`
+                       : `<span class="cv">${esc(p.guest_in)}</span>`}</div>` : ""}
+        </div></div>`).join("")}</div>
+    </section>
+    ${footHTML()}`;
+}
+const eventIdOf = no => (DATA.events.find(e => e.no === no) || {}).id || "";
 
 /* 特集するイベント。**シリーズの主催ではない**ので、スポンサー扱いにも
    下位の扱いにもならない「SPECIAL EVENT」として並べる（2026-10-01 本人意向）。
@@ -982,10 +1336,12 @@ function render(toTop) {
       state.tab === "schedule" ? renderSchedule()
     : state.tab === "results" ? renderResults()
     : state.tab === "leaderboard" ? renderLeaderboard()
+    : state.tab === "champions" ? renderChampions()
     : state.tab === "feature" ? renderFeature()
     : renderInfo();
   document.querySelectorAll("#tabs .tab").forEach(t =>
     t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
+  tickCountdown();
   if (toTop) window.scrollTo(0, 0);
 }
 function openDetail(id) {
@@ -1066,9 +1422,14 @@ function measureTop() {
       ? DATA.series.short_name : sname;
   }
   document.getElementById("topSub").textContent = DATA.series.tagline;
+  const ch = DATA.series.champions;
+  const ctab = document.getElementById("champTab");
+  if (ch && champPlayers().length && ctab) { ctab.textContent = ch.tab || "CHAMPIONS"; ctab.hidden = false; }
   const ft = DATA.series.feature;
   const ftab = document.getElementById("featTab");
   if (ft && ftab) { ftab.textContent = ft.tab || "SPECIAL"; ftab.hidden = false; }
+  const ts = document.getElementById("topSns");
+  if (ts) ts.innerHTML = snsMiniHTML().replace(/^<div class="sns-mini">|<\/div>$/g, "");
   const st = document.getElementById("topState");
   st.textContent = seriesState();
   st.classList.toggle("live", /^Day /.test(st.textContent));
@@ -1078,3 +1439,4 @@ function measureTop() {
   window.addEventListener("resize", measureTop);
 })();
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "30f953be86ea47b7912be6d048034b6c"}'></script>
