@@ -157,6 +157,21 @@ a{color:var(--brand-text)}
 
 /* ── フィルタ ─────────────────────────────────────────────────────── */
 .filters{position:sticky;top:var(--topbar,104px);z-index:30;background:var(--ground);padding:12px 0 10px;border-bottom:1px solid var(--line-soft)}
+/* 横に溢れる行（種目チップ・日付）に「まだ右にある」を出す。タブと同じ作り。
+   .srow で包み、中のスクロール要素を見て両端のぼかしと送りボタンを出す */
+.srow{position:relative}
+.srow::before,.srow::after{content:"";position:absolute;top:0;bottom:0;width:40px;
+  pointer-events:none;opacity:0;transition:opacity .18s;z-index:1}
+.srow::after{right:0;background:linear-gradient(to right,rgba(246,248,247,0),var(--ground) 72%)}
+.srow::before{left:0;background:linear-gradient(to left,rgba(246,248,247,0),var(--ground) 72%)}
+.srow.more-r::after,.srow.more-l::before{opacity:1}
+.rownudge{position:absolute;top:0;bottom:0;width:26px;z-index:2;display:none;
+  align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;
+  color:var(--brand-text);font:700 16px/1 var(--display);padding:0}
+.srow.more-r .rownudge.r,.srow.more-l .rownudge.l{display:flex}
+.rownudge.r{right:0}.rownudge.l{left:0}
+.srow.d{margin-top:8px}
+.srow.d .days{margin-top:0}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
 .chip{
@@ -795,13 +810,21 @@ function renderSchedule() {
     </div>
     ${featureHTML()}
     <div class="filters">
-      <div class="chips">
+      <div class="srow">
+        <div class="chips">
         ${fmts.map(f => `<button class="chip" data-fmt="${f}" aria-pressed="${state.fmt===f}">${f}</button>`).join("")}
         ${tags.map(t => `<button class="chip tag ${t}" data-tag="${t}" aria-pressed="${state.tags.includes(t)}">${esc(t)}</button>`).join("")}
         ${anySat ? `<button class="chip sat" data-sat="1" aria-pressed="${state.satOnly}">JOPT</button>` : ""}
         <button class="chip fav-chip" data-favonly="1" aria-pressed="${state.favOnly}">★ お気に入り${FAVS.size ? " " + FAVS.size : ""}</button>
+        </div>
+        <button class="rownudge l" data-nudge="-1" aria-label="左へ">‹</button>
+        <button class="rownudge r" data-nudge="1" aria-label="右へ">›</button>
       </div>
-      <div class="days">${dayBtns.join("")}</div>
+      <div class="srow d">
+        <div class="days">${dayBtns.join("")}</div>
+        <button class="rownudge l" data-nudge="-1" aria-label="左へ">‹</button>
+        <button class="rownudge r" data-nudge="1" aria-label="右へ">›</button>
+      </div>
     </div>
     ${groups.length ? groups.join("")
       : state.favOnly ? '<p class="empty">お気に入りはまだありません。<br>各トーナメントの ☆ を押すとここに集まります。</p>'
@@ -1359,8 +1382,24 @@ function render(toTop) {
   document.querySelectorAll("#tabs .tab").forEach(t =>
     t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
   tickCountdown();
+  syncScrollRows();
   if (toTop) window.scrollTo(0, 0);
 }
+/* .srow の中の「実際にスクロールする要素」。.chips か .days のどちらか */
+const rowInner = w => w.querySelector(".chips, .days");
+function syncScrollRows() {
+  document.querySelectorAll(".srow").forEach(w => {
+    const n = rowInner(w); if (!n) return;
+    const max = n.scrollWidth - n.clientWidth;
+    w.classList.toggle("more-r", max > 2 && n.scrollLeft < max - 2);
+    w.classList.toggle("more-l", max > 2 && n.scrollLeft > 2);
+    if (!n.dataset.bound) {           // 行そのものは作り直されるので毎回つける
+      n.dataset.bound = "1";
+      n.addEventListener("scroll", syncScrollRows, {passive: true});
+    }
+  });
+}
+window.addEventListener("resize", syncScrollRows);
 function openDetail(id) {
   const ev = DATA.events.find(e => e.id === id);
   if (!ev) return;
@@ -1377,6 +1416,11 @@ document.addEventListener("click", ev => {
   if (tab) { state.tab = tab.dataset.tab; state.lbAll = false; render(true);
     tab.scrollIntoView({block: "nearest", inline: "nearest", behavior: "smooth"});
     syncTabEdges(); return; }
+  const nd = t.closest("[data-nudge]");
+  if (nd) { const n = rowInner(nd.closest(".srow"));
+    if (n) n.scrollBy({left: Number(nd.dataset.nudge) * Math.max(96, n.clientWidth * 0.6),
+                       behavior: "smooth"});
+    return; }
   const fmt = t.closest("[data-fmt]");
   if (fmt) { state.fmt = fmt.dataset.fmt; render(); return; }
   const tg = t.closest("[data-tag]");
