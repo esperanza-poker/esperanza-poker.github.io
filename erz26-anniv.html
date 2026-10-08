@@ -83,7 +83,19 @@ a{color:var(--brand-text)}
 }
 .state.live{border-color:var(--live);color:var(--live)}
 
-.tabs{display:flex;border-bottom:1px solid var(--line);max-width:var(--wrap);margin:0 auto;padding:0 8px;overflow-x:auto;scrollbar-width:none}
+.tabwrap{position:relative;max-width:var(--wrap);margin:0 auto}
+.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 8px;overflow-x:auto;scrollbar-width:none}
+/* 端のぼかし。地の色に溶かすので、器の背景と同じ値を使う */
+.tabwrap::before,.tabwrap::after{content:"";position:absolute;top:0;bottom:1px;width:44px;
+  pointer-events:none;opacity:0;transition:opacity .18s;z-index:1}
+.tabwrap::after{right:0;background:linear-gradient(to right,rgba(246,248,247,0),var(--ground) 72%)}
+.tabwrap::before{left:0;background:linear-gradient(to left,rgba(246,248,247,0),var(--ground) 72%)}
+.tabwrap.more-r::after,.tabwrap.more-l::before{opacity:1}
+.tabnudge{position:absolute;top:0;bottom:1px;width:30px;z-index:2;display:none;
+  align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;
+  color:var(--brand-text);font:700 17px/1 var(--display);padding:0}
+.tabwrap.more-r .tabnudge.r,.tabwrap.more-l .tabnudge.l{display:flex}
+.tabnudge.r{right:0}.tabnudge.l{left:0}
 .tabs::-webkit-scrollbar{display:none}
 .tab{
   padding:11px 12px;font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.1em;
@@ -145,6 +157,21 @@ a{color:var(--brand-text)}
 
 /* ── フィルタ ─────────────────────────────────────────────────────── */
 .filters{position:sticky;top:var(--topbar,104px);z-index:30;background:var(--ground);padding:12px 0 10px;border-bottom:1px solid var(--line-soft)}
+/* 横に溢れる行（種目チップ・日付）に「まだ右にある」を出す。タブと同じ作り。
+   .srow で包み、中のスクロール要素を見て両端のぼかしと送りボタンを出す */
+.srow{position:relative}
+.srow::before,.srow::after{content:"";position:absolute;top:0;bottom:0;width:40px;
+  pointer-events:none;opacity:0;transition:opacity .18s;z-index:1}
+.srow::after{right:0;background:linear-gradient(to right,rgba(246,248,247,0),var(--ground) 72%)}
+.srow::before{left:0;background:linear-gradient(to left,rgba(246,248,247,0),var(--ground) 72%)}
+.srow.more-r::after,.srow.more-l::before{opacity:1}
+.rownudge{position:absolute;top:0;bottom:0;width:26px;z-index:2;display:none;
+  align-items:center;justify-content:center;border:0;background:transparent;cursor:pointer;
+  color:var(--brand-text);font:700 16px/1 var(--display);padding:0}
+.srow.more-r .rownudge.r,.srow.more-l .rownudge.l{display:flex}
+.rownudge.r{right:0}.rownudge.l{left:0}
+.srow.d{margin-top:8px}
+.srow.d .days{margin-top:0}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .chips::-webkit-scrollbar{display:none}
 .chip{
@@ -402,11 +429,38 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
   width:100%;flex:none;transition:border-color .12s,transform .12s;cursor:pointer}
 .feat-card:hover{border-color:var(--brand);transform:translateY(-1px)}
 .feat-card img{display:block;width:100%;height:auto}
-/* 2本以上の日（土曜）は器の中だけで横スクロールし、次の1枚を覗かせる */
-.feat-strip.multi{overflow-x:auto;scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;padding-bottom:4px}
-.feat-strip.multi .feat-card{width:88%;scroll-snap-align:start}
+/* 2枚以上の日は器の中だけで横スクロールする。**覗かせない**で1枚ずつ見せ、
+   隣があることは見出しの横の ‹ ●○ › で示す（2026-10-09 本人指示）。
+   バナー同士なら覗いても気にならないが、絵柄の違うカードが切れていると
+   崩れて見えるため */
+.feat-strip.multi{overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch}
+.feat-strip.multi::-webkit-scrollbar{display:none}
+.feat-strip.multi .feat-card{width:100%;scroll-snap-align:start}
 @media (min-width:700px){.feat-strip.multi .feat-card{width:calc(50% - 5px)}}
+/* 見出しの右。器に収まりきらないときだけ出す */
+.feat-nav{margin-left:auto;display:flex;align-items:center;gap:8px}
+.fnav{border:1px solid var(--line-soft);background:var(--surface);border-radius:4px;
+  width:26px;height:22px;display:flex;align-items:center;justify-content:center;
+  color:var(--brand-text);font:700 14px/1 var(--display);cursor:pointer;padding:0}
+.fnav:hover{border-color:var(--brand)}
+.fdots{display:flex;gap:5px}
+.fdot{width:7px;height:7px;border-radius:50%;border:0;padding:0;cursor:pointer;
+  background:var(--line-soft)}
+.fdot[aria-current="true"]{background:var(--brand)}
+/* ゲストのカード。バナーと同じ高さに伸びるので、写真は器いっぱいに切る */
+.gcard{display:flex;text-align:left;background:var(--surface-2)}
+.gc-pics{width:45%;flex:none;display:flex;flex-direction:column;gap:2px;background:var(--line-soft)}
+.gc-pics img{display:block;width:100%;flex:1 1 0;min-height:0;object-fit:cover;object-position:center 30%}
+.gc-txt{flex:1;min-width:0;padding:14px;display:flex;flex-direction:column;justify-content:center;gap:7px}
+.gc-lab{font-family:var(--display);font-weight:800;font-size:10.5px;letter-spacing:.14em;
+  color:var(--brand-text)}
+.gc-names{font-family:var(--display);font-weight:800;font-size:21px;line-height:1.2;
+  letter-spacing:.02em;word-break:break-word}
+.gc-names .sl{color:var(--ink-3);font-weight:700;margin:0 4px}
+.gc-won{font-size:11px;color:var(--ink-2);line-height:1.55}
+.gc-won b{font-weight:700;color:var(--ink)}
+.gc-ev{margin-top:3px;font-size:12px;font-weight:700;color:var(--ink-2)}
 
 /* 招待選手。写真は優勝写真なので横長。1列で大きく出す */
 .champs{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
@@ -449,6 +503,7 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
     <div class="sns-mini" id="topSns"></div>
     <div class="state" id="topState">—</div>
   </div>
+  <div class="tabwrap" id="tabwrap">
   <nav class="tabs" role="tablist" id="tabs">
     <button class="tab" role="tab" data-tab="schedule" aria-selected="true">SCHEDULE</button>
     <button class="tab" role="tab" data-tab="results" aria-selected="false">RESULTS</button>
@@ -456,7 +511,10 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
     <button class="tab" role="tab" data-tab="champions" aria-selected="false" id="champTab" hidden>—</button>
     <button class="tab" role="tab" data-tab="feature" aria-selected="false" id="featTab" hidden>—</button>
     <button class="tab" role="tab" data-tab="info" aria-selected="false">INFO</button>
-  </nav>
+    </nav>
+    <button class="tabnudge l" id="tabPrev" aria-label="左のタブを見る">‹</button>
+    <button class="tabnudge r" id="tabNext" aria-label="右のタブを見る">›</button>
+  </div>
 </header>
 
 <main id="app" class="wrap"></main>
@@ -613,20 +671,92 @@ function featureEvents() {
   // その日がまだ進行中の日なら TODAY、先出しなら NEXT
   return { label: day === playDay() ? "Today's Feature" : "Next Feature", evs };
 }
+/* その日にゲスト参戦があれば、見どころの最後に1枚足して横に並べる
+   （2026-10-09 本人指示）。バナーには「Guest : ◯◯」と文字でしか入らないので、
+   ここで GUEST タブと同じ優勝写真を大きく見せる。押すとその回の詳細へ */
+function featGuestHTML(evs) {
+  const ch = DATA.series.champions || {};
+  const hit = evs.map(e => ({ e, gs: eventGuests(e.no) }))
+                 .find(x => x.gs.some(g => g.photo_src));
+  if (!hit) return "";
+  const { e, gs } = hit;
+  const pics = gs.filter(g => g.photo_src);
+  const won = gs.filter(g => g.won).map(g =>
+    gs.length > 1 ? `<b>${esc(g.name)}</b>　${esc(g.won)}` : esc(g.won)).join("<br>");
+  return `<button class="feat-card gcard" data-ev="${e.id}"
+      aria-label="${esc(ch.title || "Champion's Bounty")} ${esc(gs.map(g => g.name).join(" / "))}">
+    ${/* 文字を左、写真を右に置く。横スクロールで**左端だけ覗く**ので、
+          覗くのが写真の切れ端だと崩れて見える（2026-10-09 本人指摘） */""}
+    <div class="gc-txt">
+      <div class="gc-lab">${esc(ch.title || "Champion's Bounty")}</div>
+      <div class="gc-names">${gs.map(g => esc(g.name)).join('<span class="sl">／</span>')}</div>
+      ${won ? `<div class="gc-won">${won}</div>` : ""}
+      <div class="gc-ev">#${String(e.no).padStart(2, "0")} ${esc(e.title)}</div>
+    </div>
+    <div class="gc-pics">${pics.map(g =>
+      `<img src="${g.photo_src}" alt="${esc(g.name)}" loading="lazy">`).join("")}</div>
+  </button>`;
+}
 function featureHTML() {
   const f = featureEvents();
   if (!f.evs.length) return "";
   const B = DATA.banners, p = dparts(f.evs[0].date);
-  return `<section class="feat">
-    <div class="feat-head"><span class="fh">${f.label}</span>
-      <span class="fd">${p.md} ${p.w}</span></div>
-    <div class="feat-strip${f.evs.length > 1 ? " multi" : ""}">
-      ${f.evs.map(e => `<button class="feat-card" data-ev="${e.id}"
+  const cards = f.evs.map(e => `<button class="feat-card" data-ev="${e.id}"
         aria-label="#${String(e.no).padStart(2, "0")} ${esc(e.title)} の詳細">
         <img src="${B[e.id]}" alt="#${String(e.no).padStart(2, "0")} ${esc(e.title)}">
-      </button>`).join("")}
+      </button>`);
+  const g = featGuestHTML(f.evs);
+  if (g) cards.push(g);
+  return `<section class="feat">
+    <div class="feat-head"><span class="fh">${f.label}</span>
+      <span class="fd">${p.md} ${p.w}</span>
+      ${cards.length > 1 ? `<div class="feat-nav" hidden>
+        <button class="fnav" data-fstep="-1" aria-label="前のカード">‹</button>
+        <div class="fdots">${cards.map((_, i) =>
+          `<button class="fdot" data-fgo="${i}" aria-label="${i + 1}枚目を見る"></button>`).join("")}</div>
+        <button class="fnav" data-fstep="1" aria-label="次のカード">›</button>
+      </div>` : ""}
+    </div>
+    <div class="feat-strip${cards.length > 1 ? " multi" : ""}">
+      ${cards.join("")}
     </div>
   </section>`;
+}
+/* 見どころの ‹ ●○ ›。**器に収まりきらないときだけ**出す（PC で2枚とも
+   並びきる幅なら押すものが無いので隠す）。丸は今どのカードを見ているか */
+function featStrip() { return document.querySelector(".feat-strip.multi"); }
+function featIndex(st) {
+  const cs = [...st.children];
+  let cur = 0, best = Infinity;
+  cs.forEach((c, i) => {
+    const d = Math.abs((c.offsetLeft - cs[0].offsetLeft) - st.scrollLeft);
+    if (d < best) { best = d; cur = i; }
+  });
+  return cur;
+}
+function featGo(i) {
+  const st = featStrip(); if (!st) return;
+  const cs = [...st.children];
+  const n = Math.max(0, Math.min(cs.length - 1, i));
+  /* ⚠️ なめらかスクロール（`behavior:"smooth"` も CSS の `scroll-behavior` も）は
+     `scroll-snap-type:x mandatory` と相性が悪く、途中で 0 に戻されることがある。
+     素直に値を入れて1枚ぶんきっちり送る（2026-10-09 に実機確認） */
+  st.scrollLeft = cs[n].offsetLeft - cs[0].offsetLeft;
+}
+function syncFeatNav() {
+  const st = featStrip(), nav = document.querySelector(".feat-nav");
+  if (!st || !nav) return;
+  const more = st.scrollWidth > st.clientWidth + 1;
+  nav.hidden = !more;
+  if (more) {
+    const cur = featIndex(st);
+    nav.querySelectorAll(".fdot").forEach((d, i) =>
+      d.setAttribute("aria-current", String(i === cur)));
+  }
+  if (!st.dataset.bound) {            // 器は描き直されるので毎回つけ直す
+    st.dataset.bound = "1";
+    st.addEventListener("scroll", syncFeatNav, {passive: true});
+  }
 }
 /* 会期の右に置く店のアカウント。アイコンだけで、読み上げには名前を持たせる */
 /* 予定表の時刻を実時刻に直す。**日付は営業日（正午区切り）**なので、
@@ -779,13 +909,21 @@ function renderSchedule() {
     </div>
     ${featureHTML()}
     <div class="filters">
-      <div class="chips">
+      <div class="srow">
+        <div class="chips">
         ${fmts.map(f => `<button class="chip" data-fmt="${f}" aria-pressed="${state.fmt===f}">${f}</button>`).join("")}
         ${tags.map(t => `<button class="chip tag ${t}" data-tag="${t}" aria-pressed="${state.tags.includes(t)}">${esc(t)}</button>`).join("")}
         ${anySat ? `<button class="chip sat" data-sat="1" aria-pressed="${state.satOnly}">JOPT</button>` : ""}
         <button class="chip fav-chip" data-favonly="1" aria-pressed="${state.favOnly}">★ お気に入り${FAVS.size ? " " + FAVS.size : ""}</button>
+        </div>
+        <button class="rownudge l" data-nudge="-1" aria-label="左へ">‹</button>
+        <button class="rownudge r" data-nudge="1" aria-label="右へ">›</button>
       </div>
-      <div class="days">${dayBtns.join("")}</div>
+      <div class="srow d">
+        <div class="days">${dayBtns.join("")}</div>
+        <button class="rownudge l" data-nudge="-1" aria-label="左へ">‹</button>
+        <button class="rownudge r" data-nudge="1" aria-label="右へ">›</button>
+      </div>
     </div>
     ${groups.length ? groups.join("")
       : state.favOnly ? '<p class="empty">お気に入りはまだありません。<br>各トーナメントの ☆ を押すとここに集まります。</p>'
@@ -1108,6 +1246,12 @@ function renderChampions() {
 }
 const eventIdOf = no => (DATA.events.find(e => e.no === no) || {}).id || "";
 
+/* その回にゲスト参戦する Champion's Bounty の面々。**イベント側には書かない**で
+   champions の `guest_no` から引く（GUEST タブと二重に持つと必ずずれるため）。
+   `hidden` の人は GUEST タブと同じく出さない。並びは champions の並び順のまま */
+const eventGuests = no => (((DATA.series.champions || {}).players) || [])
+  .filter(p => !p.hidden && p.guest_no === no);
+
 /* 特集するイベント。**シリーズの主催ではない**ので、スポンサー扱いにも
    下位の扱いにもならない「SPECIAL EVENT」として並べる（2026-10-01 本人意向）。
    リーダーボード1位の権利がここに繋がるので、その関係だけを明記する。 */
@@ -1266,10 +1410,25 @@ function detailHTML(ev) {
           ${tags.join("")}
         </div>
         <h2>${ev.subtitle ? `<small>${esc(ev.subtitle)}</small>` : ""}${esc(ev.title)}</h2>
+        ${/* ゲスト参戦の回は、バナーと同じ画面の見出し直下に出す（2026-10-09 本人指示）。
+              ev.guest を書けばそれが優先、なければ champions から自動で引く */""}
         ${ev.guest ? `<div class="special" style="margin-top:14px">
             <div class="lab">${esc(ev.guest.label)}</div>
             <div class="hl">Guest : ${esc(ev.guest.name)}</div>
-            <div class="bd">${esc(ev.guest.note)}</div></div>` : ""}
+            <div class="bd">${esc(ev.guest.note)}</div></div>`
+         : (() => {
+             const gs = eventGuests(ev.no);
+             if (!gs.length) return "";
+             const ch = DATA.series.champions || {};
+             const won = gs.filter(g => g.won).map(g =>
+               gs.length > 1 ? `${esc(g.name)}　${esc(g.won)}` : esc(g.won)).join("<br>");
+             /* 写真は添えない。GUEST タブで大きく見せており、ここはバナーの
+                「Guest : ◯◯」を文字で補うだけでよい（2026-10-09 本人指示） */
+             return `<div class="special" style="margin-top:14px">
+               <div class="lab">${esc(ch.title || "Champion's Bounty")}</div>
+               <div class="hl">Guest : ${gs.map(g => esc(g.name)).join(" ／ ")}</div>
+               ${won ? `<div class="bd">${won}</div>` : ""}</div>`;
+           })()}
         <div class="hero-when">
           <div><div class="k">DATE</div><div class="v">${p.md}</div></div>
           <div><div class="k">START</div><div class="v">${esc(ev.start)}</div></div>
@@ -1343,8 +1502,26 @@ function render(toTop) {
   document.querySelectorAll("#tabs .tab").forEach(t =>
     t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
   tickCountdown();
+  syncScrollRows();
+  syncFeatNav();
   if (toTop) window.scrollTo(0, 0);
 }
+/* .srow の中の「実際にスクロールする要素」。.chips か .days のどちらか */
+const rowInner = w => w.querySelector(".chips, .days");
+function syncScrollRows() {
+  document.querySelectorAll(".srow").forEach(w => {
+    const n = rowInner(w); if (!n) return;
+    const max = n.scrollWidth - n.clientWidth;
+    w.classList.toggle("more-r", max > 2 && n.scrollLeft < max - 2);
+    w.classList.toggle("more-l", max > 2 && n.scrollLeft > 2);
+    if (!n.dataset.bound) {           // 行そのものは作り直されるので毎回つける
+      n.dataset.bound = "1";
+      n.addEventListener("scroll", syncScrollRows, {passive: true});
+    }
+  });
+}
+window.addEventListener("resize", syncScrollRows);
+window.addEventListener("resize", syncFeatNav);
 function openDetail(id) {
   const ev = DATA.events.find(e => e.id === id);
   if (!ev) return;
@@ -1358,7 +1535,19 @@ function closeDetail() {
 document.addEventListener("click", ev => {
   const t = ev.target;
   const tab = t.closest("[data-tab]");
-  if (tab) { state.tab = tab.dataset.tab; state.lbAll = false; render(true); return; }
+  if (tab) { state.tab = tab.dataset.tab; state.lbAll = false; render(true);
+    tab.scrollIntoView({block: "nearest", inline: "nearest", behavior: "smooth"});
+    syncTabEdges(); return; }
+  const nd = t.closest("[data-nudge]");
+  if (nd) { const n = rowInner(nd.closest(".srow"));
+    if (n) n.scrollBy({left: Number(nd.dataset.nudge) * Math.max(96, n.clientWidth * 0.6),
+                       behavior: "smooth"});
+    return; }
+  const fg = t.closest("[data-fgo]");
+  if (fg) { featGo(Number(fg.dataset.fgo)); return; }
+  const fs = t.closest("[data-fstep]");
+  if (fs) { const st = featStrip();
+    if (st) featGo(featIndex(st) + Number(fs.dataset.fstep)); return; }
   const fmt = t.closest("[data-fmt]");
   if (fmt) { state.fmt = fmt.dataset.fmt; render(); return; }
   const tg = t.closest("[data-tag]");
@@ -1438,7 +1627,31 @@ function measureTop() {
   render();
   measureTop();
   window.addEventListener("resize", measureTop);
+  initTabScroll();
 })();
+
+/* タブは横に溢れる（GUEST / SPECIAL が出ると6本）。スクロールバーを消してあるので
+   「右にまだある」ことが分からない（本人指摘 2026-10-04）。端にぼかしと送りボタンを出す。
+   **タブは出し入れされる**（champTab / featTab）ので、幅の判定は描画のたびにやり直す */
+function syncTabEdges() {
+  const w = document.getElementById("tabwrap"), n = document.getElementById("tabs");
+  if (!w || !n) return;
+  const max = n.scrollWidth - n.clientWidth;
+  w.classList.toggle("more-r", max > 2 && n.scrollLeft < max - 2);
+  w.classList.toggle("more-l", max > 2 && n.scrollLeft > 2);
+}
+function initTabScroll() {
+  const n = document.getElementById("tabs");
+  if (!n) return;
+  const step = () => Math.max(96, n.clientWidth * 0.6);
+  const go = d => n.scrollBy({left: d * step(), behavior: "smooth"});
+  document.getElementById("tabNext")?.addEventListener("click", () => go(1));
+  document.getElementById("tabPrev")?.addEventListener("click", () => go(-1));
+  n.addEventListener("scroll", syncTabEdges, {passive: true});
+  window.addEventListener("resize", syncTabEdges);
+  if (window.ResizeObserver) new ResizeObserver(syncTabEdges).observe(n);
+  syncTabEdges();
+}
 </script>
 <script>
 /* ホーム画面に追加した Web アプリは、**復帰しても読み直さない**（本人指摘 2026-10-04）。
