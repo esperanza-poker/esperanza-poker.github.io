@@ -448,6 +448,8 @@ table.st td.desc{white-space:normal;text-align:left;font-family:var(--body);font
 .fdot{width:7px;height:7px;border-radius:50%;border:0;padding:0;cursor:pointer;
   background:var(--line-soft)}
 .fdot[aria-current="true"]{background:var(--brand)}
+/* 回ごとの添え図（#14 の VLT. ボーナス一覧）。枠線だけ付けて版面いっぱいに */
+.evfig{display:block;width:100%;height:auto;border:1px solid var(--line-soft)}
 /* ゲストのカード。バナーと同じ高さに伸びるので、写真は器いっぱいに切る */
 .gcard{display:flex;text-align:left;background:var(--surface-2)}
 .gc-pics{width:45%;flex:none;display:flex;flex-direction:column;gap:2px;background:var(--line-soft)}
@@ -674,12 +676,8 @@ function featureEvents() {
 /* その日にゲスト参戦があれば、見どころの最後に1枚足して横に並べる
    （2026-10-09 本人指示）。バナーには「Guest : ◯◯」と文字でしか入らないので、
    ここで GUEST タブと同じ優勝写真を大きく見せる。押すとその回の詳細へ */
-function featGuestHTML(evs) {
+function guestCardHTML(e, gs) {
   const ch = DATA.series.champions || {};
-  const hit = evs.map(e => ({ e, gs: eventGuests(e.no) }))
-                 .find(x => x.gs.some(g => g.photo_src));
-  if (!hit) return "";
-  const { e, gs } = hit;
   const pics = gs.filter(g => g.photo_src);
   const won = gs.filter(g => g.won).map(g =>
     gs.length > 1 ? `<b>${esc(g.name)}</b>　${esc(g.won)}` : esc(g.won)).join("<br>");
@@ -701,12 +699,22 @@ function featureHTML() {
   const f = featureEvents();
   if (!f.evs.length) return "";
   const B = DATA.banners, p = dparts(f.evs[0].date);
-  const cards = f.evs.map(e => `<button class="feat-card" data-ev="${e.id}"
-        aria-label="#${String(e.no).padStart(2, "0")} ${esc(e.title)} の詳細">
-        <img src="${B[e.id]}" alt="#${String(e.no).padStart(2, "0")} ${esc(e.title)}">
+  /* 回ごとに「バナー → ゲスト → 添え図」の順で並べる。土曜のように2本ある日は
+     #13のバナー・#13のゲスト・#14のバナー・#14のゲスト… と続く */
+  const cards = [];
+  f.evs.forEach(e => {
+    const no = String(e.no).padStart(2, "0");
+    cards.push(`<button class="feat-card" data-ev="${e.id}"
+        aria-label="#${no} ${esc(e.title)} の詳細">
+        <img src="${B[e.id]}" alt="#${no} ${esc(e.title)}">
       </button>`);
-  const g = featGuestHTML(f.evs);
-  if (g) cards.push(g);
+    const gs = eventGuests(e.no);
+    if (gs.some(g => g.photo_src)) cards.push(guestCardHTML(e, gs));
+    if (e.figure && e.figure.src) cards.push(`<button class="feat-card" data-ev="${e.id}"
+        aria-label="#${no} ${esc(e.figure.caption || e.figure.label || "")}">
+        <img src="${e.figure.src}" alt="${esc(e.figure.caption || e.figure.label || "")}">
+      </button>`);
+  });
   return `<section class="feat">
     <div class="feat-head"><span class="fh">${f.label}</span>
       <span class="fd">${p.md} ${p.w}</span>
@@ -1458,6 +1466,14 @@ function detailHTML(ev) {
 
       ${prizeBlock ? `<section class="blk"><h3>Tournament Prize</h3>${prizeBlock}
         ${ev.prize_note ? `<div class="prizenote">${esc(ev.prize_note)}</div>` : ""}</section>` : ""}
+
+      ${/* 回ごとの添え図（いまは #14 の VLT. ボーナス一覧）。プライズの直後に置く ——
+            加算ぶんを確かめたい人がプライズを見た流れで目に入る位置 */""}
+      ${ev.figure && ev.figure.src ? `<section class="blk">
+        ${ev.figure.label ? `<h3>${esc(ev.figure.label)}</h3>` : ""}
+        <img class="evfig" src="${ev.figure.src}" alt="${esc(ev.figure.caption || ev.figure.label || "")}" loading="lazy">
+        ${ev.figure.caption ? `<div class="prizenote">${esc(ev.figure.caption)}</div>` : ""}
+      </section>` : ""}
 
       <section class="blk"><h3>Structure</h3>${structureTable(ev)}</section>
 
